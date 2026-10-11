@@ -1,76 +1,76 @@
 import unittest
 
 from campusflow.tickets import (
-    validate_title,
-    validate_category,
-    validate_urgency,
-    validate_affected_users,
     calculate_priority,
-    generate_ticket_id,
     create_ticket,
+    generate_ticket_id,
+    validate_affected_users,
+    validate_category,
+    validate_title,
+    validate_urgency,
 )
 
 
 class TestTicketValidation(unittest.TestCase):
+    def test_valid_title_is_trimmed(self):
+        self.assertEqual(validate_title("  Wi-Fi is down  "), "Wi-Fi is down")
 
-    # Title validation
-    def test_valid_title(self):
-        result = validate_title("Wi-Fi is down")
-        self.assertEqual(result, "Wi-Fi is down")
+    def test_blank_title_rejected(self):
+        for title in ("", "   ", None):
+            with self.subTest(title=title), self.assertRaises(ValueError):
+                validate_title(title)
 
-    def test_blank_title(self):
-        with self.assertRaises(ValueError):
-            validate_title("   ")
-
-    # Category validation
     def test_category_normalization(self):
-        result = validate_category("NETWORK")
-        self.assertEqual(result, "Network")
+        self.assertEqual(validate_category("NETWORK"), "Network")
+        self.assertEqual(validate_category(" hardware "), "Hardware")
 
-    def test_invalid_category(self):
+    def test_invalid_category_rejected(self):
         with self.assertRaises(ValueError):
             validate_category("Electricity")
 
-    # Urgency validation
-    def test_urgency_normalization(self):
-        result = validate_urgency("HIGH")
-        self.assertEqual(result, "high")
+    def test_non_text_category_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_category(None)
 
-    def test_invalid_urgency(self):
+    def test_urgency_normalization(self):
+        self.assertEqual(validate_urgency(" HIGH "), "high")
+
+    def test_invalid_urgency_rejected(self):
         with self.assertRaises(ValueError):
             validate_urgency("urgent")
 
-    # Affected users validation
+    def test_non_text_urgency_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_urgency(None)
+
     def test_valid_affected_users(self):
-        result = validate_affected_users(5)
-        self.assertEqual(result, 5)
+        self.assertEqual(validate_affected_users(5), 5)
 
-    def test_zero_affected_users(self):
-        with self.assertRaises(ValueError):
-            validate_affected_users(0)
+    def test_invalid_affected_users_rejected(self):
+        for value in (0, -1, 1.5, True, "3", None):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_affected_users(value)
 
-    def test_negative_affected_users(self):
-        with self.assertRaises(ValueError):
-            validate_affected_users(-2)
-
-    def test_decimal_affected_users(self):
-        with self.assertRaises(ValueError):
-            validate_affected_users(5.5)
-
-    # Priority calculation
     def test_critical_priority(self):
         self.assertEqual(calculate_priority("high", 12), "critical")
 
     def test_high_priority(self):
         self.assertEqual(calculate_priority("high", 4), "high")
+        self.assertEqual(calculate_priority("low", 10), "high")
 
     def test_medium_priority(self):
-        self.assertEqual(calculate_priority("medium", 5), "medium")
+        self.assertEqual(calculate_priority("medium", 1), "medium")
+        self.assertEqual(calculate_priority("low", 3), "medium")
 
     def test_low_priority(self):
         self.assertEqual(calculate_priority("low", 1), "low")
 
-    # Ticket ID generation
+    def test_priority_rejects_invalid_inputs(self):
+        with self.assertRaises(ValueError):
+            calculate_priority("urgent", 1)
+        with self.assertRaises(ValueError):
+            calculate_priority("low", True)
+
     def test_first_ticket_id(self):
         self.assertEqual(generate_ticket_id([]), "T001")
 
@@ -78,27 +78,14 @@ class TestTicketValidation(unittest.TestCase):
         tickets = [{"id": "T001"}, {"id": "T002"}]
         self.assertEqual(generate_ticket_id(tickets), "T003")
 
-    def test_ticket_id_after_deletion(self):
-        tickets = [
-            {"id": "T001"},
-            {"id": "T003"},
-            {"id": "T007"},
-        ]
-
+    def test_ticket_id_after_gap(self):
+        tickets = [{"id": "T001"}, {"id": "T003"}, {"id": "T007"}]
         self.assertEqual(generate_ticket_id(tickets), "T008")
 
-    # Ticket creation
-    def test_create_ticket(self):
-        ticket = create_ticket(
-            "Wi-Fi is down",
-            "NETWORK",
-            "HIGH",
-            12,
-            [],
-        )
-
+    def test_ticket_creation(self):
+        ticket = create_ticket([], "Network down", "network", "high", 12)
         self.assertEqual(ticket["id"], "T001")
-        self.assertEqual(ticket["title"], "Wi-Fi is down")
+        self.assertEqual(ticket["title"], "Network down")
         self.assertEqual(ticket["category"], "Network")
         self.assertEqual(ticket["urgency"], "high")
         self.assertEqual(ticket["affected_users"], 12)
@@ -106,13 +93,26 @@ class TestTicketValidation(unittest.TestCase):
         self.assertEqual(ticket["status"], "open")
         self.assertIsNone(ticket["assigned_to"])
 
-    def test_create_ticket_with_blank_title(self):
-        with self.assertRaises(ValueError):
-            create_ticket("   ", "NETWORK", "HIGH", 12, [])
+    def test_ticket_ids_increment(self):
+        first = create_ticket([], "First", "Software", "low", 1)
+        second = create_ticket([first], "Second", "Hardware", "low", 1)
+        self.assertEqual(second["id"], "T002")
 
-    def test_create_ticket_with_invalid_urgency(self):
+    def test_ticket_creation_rejects_blank_title(self):
         with self.assertRaises(ValueError):
-            create_ticket("Wi-Fi is down", "NETWORK", "urgent", 12, [])
+            create_ticket([], "  ", "Other", "low", 1)
+
+    def test_ticket_creation_rejects_invalid_category(self):
+        with self.assertRaises(ValueError):
+            create_ticket([], "Problem", "Food", "low", 1)
+
+    def test_ticket_creation_rejects_invalid_urgency(self):
+        with self.assertRaises(ValueError):
+            create_ticket([], "Problem", "Other", "urgent", 1)
+
+    def test_ticket_creation_rejects_invalid_affected_users(self):
+        with self.assertRaises(ValueError):
+            create_ticket([], "Problem", "Other", "low", True)
 
 
 if __name__ == "__main__":
