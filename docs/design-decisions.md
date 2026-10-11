@@ -1,28 +1,51 @@
 # CampusFlow Design Decisions
 
 ## 1. Separation of responsibilities
-- tickets.py is responsible for ticket creation and validation.
-- workflow.py handles ticket assignment, status updates, and the open-ticket queue.
-- reports.py calculates ticket summaries.
-- storage.py handles persistence.
-- main.py connects application logic to the command-line interface.
 
-## 2. Workflow functions
-Assignment, status management, and queue ordering are separate functions so each responsibility can be tested independently.
+- `tickets.py` validates ticket input, calculates priority, generates IDs, and creates tickets.
+- `workflow.py` handles assignment, status changes, and the open-ticket queue.
+- `storage.py` loads and saves ticket data in JSON format.
+- `reports.py` generates ticket summary reports.
+- `main.py` provides the command-line interface and connects the modules.
+- `tests/` contains automated unit tests for the application.
 
-## 3. Status validation
-Only open, in_progress, and resolved are accepted.
-An unassigned ticket cannot move to in_progress.
-A resolved ticket must be reopened before it can move to another status.
+## 2. Ticket validation
 
-## 4. Queue ordering
-Only open tickets are included.
-Tickets are ordered critical, high, medium, then low.
-Tickets with equal priority are ordered by their numeric ID.
+Titles must contain non-whitespace text and are trimmed before storage.
+Categories are normalized to Network, Hardware, Software, or Other.
+Urgency is normalized to lowercase and must be low, medium, or high.
+Affected users must be a positive integer; booleans are not accepted.
 
-## 5. Reporting
-The reporting function returns a dictionary of totals rather than printing directly.
-This separates business logic from presentation and makes the function easier to test.
+## 3. Priority rules
 
-## 6. Testing
-Python unittest is used to test normal behavior, validation failures, queue ordering, and empty inputs.
+- High urgency and at least 10 affected users: critical.
+- High urgency or at least 10 affected users: high.
+- Medium urgency or at least 3 affected users: medium.
+- Otherwise: low.
+
+The rules are evaluated from highest to lowest priority.
+
+## 4. Ticket IDs
+
+Ticket IDs use the format `T001`, `T002`, and so on.
+New IDs are generated from the largest valid existing numeric ID.
+
+## 5. Workflow
+
+Tickets begin with open status and no assignee.
+A ticket must be assigned before moving to `in_progress`.
+Resolved tickets must be reopened before further changes.
+The open queue contains only open tickets and sorts by priority, then numeric ID.
+
+## 6. Persistence and reporting
+
+Ticket records are persisted as JSON. A missing data file starts with an empty
+ticket list, while malformed data must produce a clear error rather than
+silently discarding saved tickets.
+
+Reports count tickets by status and priority and include the total ticket count.
+
+## 7. Testing
+
+The application uses Python's `unittest` framework to test validation,
+priority calculation, ticket creation, workflow rules, persistence, and reports.
