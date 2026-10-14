@@ -8,6 +8,20 @@ CATEGORIES = {
 }
 URGENCIES = {"low", "medium", "high"}
 
+def add_ticket_note(ticket, note):
+    """Validate a note and add it to a ticket."""
+    if not isinstance(note, str) or not note.strip():
+        raise ValueError("Ticket note cannot be empty.")
+
+    if "notes" not in ticket:
+        ticket["notes"] = []
+
+    if not isinstance(ticket["notes"], list):
+        raise ValueError("Ticket notes must be stored as a list.")
+
+    ticket["notes"].append(note.strip())
+    return ticket
+
 
 def validate_title(title):
     """Validate and trim a ticket title."""
@@ -94,4 +108,5 @@ def create_ticket(tickets, title, category, urgency, affected_users):
         "priority": calculate_priority(urgency, affected_users),
         "status": "open",
         "assigned_to": None,
+        "notes": [],
     }
