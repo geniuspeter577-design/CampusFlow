@@ -33,5 +33,31 @@ class TestStorage(unittest.TestCase):
                 load_tickets(path)
 
 
+    def test_ticket_notes_survive_save_and_load(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tickets.json"
+            tickets = [
+                {
+                    "id": "T001",
+                    "status": "open",
+                    "notes": [
+                        "Contacted the network team",
+                        "Waiting for a response",
+                    ],
+                }
+            ]
+
+            save_tickets(tickets, path)
+            loaded_tickets = load_tickets(path)
+
+            self.assertEqual(loaded_tickets, tickets)
+            self.assertEqual(
+                loaded_tickets[0]["notes"],
+                [
+                    "Contacted the network team",
+                    "Waiting for a response",
+                ],
+            )
+
 if __name__ == "__main__":
     unittest.main()
