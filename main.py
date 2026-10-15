@@ -15,6 +15,7 @@ from campusflow.workflow import (
 from campusflow.search import search_tickets
 from campusflow.reports import generate_ticket_report
 from campusflow.storage import load_tickets, save_tickets
+from campusflow.quiz import run_quiz
 
 
 def find_ticket(tickets, ticket_id):
@@ -186,6 +187,7 @@ def main():
             "7. Ticket details\n"
             "8. Search and filter\n"
             "9. Generate report\n"
+            "10. Engineering Understanding Check\n"
             "0. Exit"
         )
 
@@ -210,11 +212,13 @@ def main():
                 search_and_filter(tickets)
             elif choice == "9":
                 show_report(tickets)
+            elif choice == "10":
+                run_quiz()
             elif choice == "0":
                 print("Exiting CampusFlow.")
                 break
             else:
-                print("Invalid option. Choose 0 to 9.")
+                print("Invalid option. Choose 0 to 10.")
         except (ValueError, TypeError, KeyError) as error:
             print(f"Operation failed: {error}")
 
