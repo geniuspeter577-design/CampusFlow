@@ -9,6 +9,7 @@ from campusflow.storage import load_validated_tickets, save_tickets
 from campusflow.notes import add_note, get_notes
 from campusflow.search import search_tickets, sort_by_priority_then_id
 from campusflow.cli import ask_valid, format_ticket_row
+from campusflow.explanations import run_check_with_explanations
 
 MENU = """
 CampusFlow Helpdesk
@@ -22,6 +23,7 @@ CampusFlow Helpdesk
 8. View ticket notes
 9. Search tickets
 10. Search tickets (sorted by priority)
+11. Engineering Understanding Check
 0. Save and exit"""
 
 
@@ -100,6 +102,9 @@ def main():
 
             elif choice in ("9", "10"):
                 _run_search(tickets, sort_by_priority=(choice == "10"))
+
+            elif choice == "11":
+                run_check_with_explanations()
 
             elif choice == "0":
                 save_tickets(tickets)
