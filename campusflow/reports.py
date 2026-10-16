@@ -32,4 +32,7 @@ def generate_ticket_report(tickets):
         report["resolution_percentage"] = round(
             report["resolved"] / report["total"] * 100, 1
         )
+    report["categories"] = {
+        name: report[name] for name in CATEGORY_NAMES if report[name]
+    }
     return report
