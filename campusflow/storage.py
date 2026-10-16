@@ -27,3 +27,14 @@ def save_tickets(tickets, path="tickets.json"):
     with file_path.open("w", encoding="utf-8") as file:
         json.dump(tickets, file, indent=2, ensure_ascii=False)
         file.write("\n")
+
+
+def load_validated_tickets(path="tickets.json"):
+    """Load AND fully validate tickets. Raises ValueError if anything is wrong.
+
+    Returns a new list only when everything is valid, so the caller's
+    current tickets are never touched by a failed load.
+    """
+    from campusflow.validation import validate_ticket_collection
+
+    return validate_ticket_collection(load_tickets(path))
