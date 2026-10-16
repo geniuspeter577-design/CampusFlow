@@ -1,87 +1,107 @@
-# CampusFlow
+# CampusFlow Next
 
-CampusFlow is a Python command-line helpdesk ticket management system designed to help campus technical support teams manage, assign, track, and resolve support requests.
+A Python command-line helpdesk for campus technical support. Staff register
+problems (Wi-Fi, laptops, software, learning tools), track them, leave
+follow-up notes, search tickets and read reports.
 
-## Features
+Python standard library only. No external packages.
 
-- **Ticket management:** Create and list support tickets.
-- **Assignment:** Assign tickets to support personnel.
-- **Status tracking:** Update ticket statuses and manage ticket workflows.
-- **Ticket notes:** Add notes to tickets and preserve them across save and load operations.
-- **Search and filtering:** Search tickets by title and filter using supported ticket fields.
-- **Priority queue:** View open tickets in priority order.
-- **Ticket details:** View information about individual tickets.
-- **Reports:** View ticket counts, priority summaries, unresolved tickets, resolution percentage, and category breakdowns.
-- **Validation:** Reject invalid ticket data and workflow operations.
+## Run the app
 
-## Requirements
+    python main.py
 
-- Python 3
-- Git (optional, for cloning and contributing)
+## Run the tests (works from a fresh clone)
 
-No third-party packages are required for the current standard-library-based application and tests.
+    git clone https://github.com/geniuspeter577-design/CampusFlow.git
+    cd CampusFlow
+    git checkout fix/campusflow-next
+    python -m unittest discover -s tests -v
 
-## Getting Started
+## Menu
 
-Clone the repository and enter the project directory:
+    1. Create ticket
+    2. List tickets
+    3. Assign ticket
+    4. Update ticket status
+    5. Show open queue
+    6. Show report
+    7. Add follow-up note
+    8. View ticket notes
+    9. Search tickets
+    10. Search tickets (sorted by priority)
+    11. Engineering Understanding Check
+    0. Save and exit
 
-```bash
-git clone https://github.com/ireubencodes/CampusFlow.git
-cd CampusFlow
-```
+## Business rules
 
-Run the application:
+- Category: Network, Hardware, Software or Other. Urgency: low, medium or high.
+- affected_users must be a strictly positive whole number (no 0, negatives,
+  decimals, text or True/False).
+- Priority: critical when urgency is high AND affected_users >= 10; otherwise
+  high when urgency is high OR affected_users >= 10; otherwise medium when
+  urgency is medium OR affected_users >= 3; otherwise low.
+- Status flow: open -> in_progress -> resolved; a resolved ticket can be
+  reopened to open. A ticket must be assigned before it can be in_progress.
+- A resolved ticket cannot be assigned or receive notes until it is reopened.
+- Rejected actions never change any ticket data.
+- Open queue (option 5): only OPEN tickets, ordered critical > high > medium >
+  low, then by numeric ticket number (T2 before T10).
 
-```bash
-python main.py
-```
+## Notes
 
-Follow the interactive menu to select an available operation.
+- A note is {note_id, author, message} with per-ticket IDs N001, N002, ...
+- Only open or in_progress tickets accept notes.
+- Author cannot be blank. Message must be 5-300 characters after trimming.
+- A rejected note does not use up a note ID. Notes are kept through
+  resolve and reopen.
 
-## Running Tests
+## Search (options 9 and 10)
 
-Run the complete test suite from the project root:
+- Title: case-insensitive substring match (WI-FI matches wi-fi).
+- Optional category, status and priority filters. Press Enter to skip one.
+- All supplied filters must match (AND). Invalid choices ask again.
+- Search never changes tickets. Option 10 sorts the results by priority, then
+  by numeric ticket number. It does not replace the open queue.
 
-```bash
-python -m unittest discover -s tests -v
-```
+## Report (option 6)
 
-The tests cover ticket validation, notes, storage, workflows, search, and reports.
+Total tickets, counts by status, priority and category, unresolved (open +
+in_progress), resolved, and resolution percentage (resolved / total x 100).
+No tickets gives 0%. Reopened tickets count by their CURRENT status.
 
-## Project Structure
+## Data file format (tickets.json)
 
-```text
-CampusFlow/
-├── main.py
-├── campusflow/
-│   ├── reports.py
-│   ├── search.py
-│   ├── storage.py
-│   └── workflow.py
-└── tests/
-    ├── test_notes.py
-    ├── test_reports.py
-    ├── test_search.py
-    ├── test_storage.py
-    ├── test_tickets.py
-    └── test_workflow.py
-```
+A JSON list. Each ticket is an object:
 
-- `main.py`: Command-line interface and menu.
-- `campusflow/reports.py`: Ticket reporting and summary calculations.
-- `campusflow/search.py`: Ticket search and filtering.
-- `campusflow/storage.py`: Ticket data persistence and loading/saving.
-- `campusflow/workflow.py`: Ticket assignment, status changes, queue handling, and note operations.
-- `tests/`: Automated tests for the application's functionality.
+    {
+      "id": "T001",
+      "title": "Wi-Fi down",
+      "category": "Network",
+      "urgency": "high",
+      "affected_users": 12,
+      "priority": "critical",
+      "status": "open",
+      "assigned_to": null,
+      "notes": [
+        {"note_id": "N001", "author": "Mentor A", "message": "Router reboot attempted"}
+      ]
+    }
 
-## Contributing
+On start-up the WHOLE file is validated first: structure, required keys,
+unique ticket IDs, valid category/urgency/status, priority matching the rule,
+and note shapes with unique note IDs per ticket. If anything is wrong the app
+refuses to load, prints the reason and does not change the file.
 
-1. Start from the latest `main` branch.
-2. Create a separate branch for your task.
-3. Make focused changes and run the test suite.
-4. Commit and push your branch.
-5. Open a pull request into `main` for review.
+## Understanding Check (option 11)
 
-## License
+Six multiple-choice questions (A/B/C/D) about how this app behaves, scored
+0-6. You then explain two answers in your own words. Explanations are saved
+to docs/understanding-check-notes.md for mentor discussion and are never
+auto-graded.
 
-No license has been specified yet.
+## Project layout
+
+- campusflow/ : tickets, workflow, notes, search, reports, storage,
+  validation, cli helpers, question bank, understanding check, explanations
+- tests/ : unittest test files
+- docs/ : baseline-check.md, design-decisions.md

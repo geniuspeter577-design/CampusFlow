@@ -1,36 +1,38 @@
 """Generate summary reports for CampusFlow tickets."""
 
+CATEGORY_NAMES = ("Network", "Hardware", "Software", "Other")
+
 
 def generate_ticket_report(tickets):
-    """Count tickets by status, priority, category, and resolution."""
-    statuses = {"open": 0, "in_progress": 0, "resolved": 0}
-    priorities = {"critical": 0, "high": 0, "medium": 0, "low": 0}
-    categories = {}
+    """Count tickets by status, priority and category. Read-only."""
+    report = {
+        "total": len(tickets),
+        "open": 0,
+        "in_progress": 0,
+        "resolved": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+    }
+    for name in CATEGORY_NAMES:
+        report[name] = 0
 
     for ticket in tickets:
-        status = ticket["status"]
-        priority = ticket["priority"]
-        category = ticket.get("category", "Other")
+        report[ticket["status"]] += 1
+        report[ticket["priority"]] += 1
+        category = ticket.get("category")
+        if category in CATEGORY_NAMES:
+            report[category] += 1
 
-        if status in statuses:
-            statuses[status] += 1
-        if priority in priorities:
-            priorities[priority] += 1
-
-        categories[category] = categories.get(category, 0) + 1
-
-    total = len(tickets)
-    resolved = statuses["resolved"]
-    unresolved = statuses["open"] + statuses["in_progress"]
-
-    report = {
-        "total": total,
-        **statuses,
-        **priorities,
-        "unresolved": unresolved,
-        "resolution_percentage": (
-            round((resolved / total) * 100, 2) if total else 0
-        ),
-        "categories": categories,
+    report["unresolved"] = report["open"] + report["in_progress"]
+    if report["total"] == 0:
+        report["resolution_percentage"] = 0.0
+    else:
+        report["resolution_percentage"] = round(
+            report["resolved"] / report["total"] * 100, 1
+        )
+    report["categories"] = {
+        name: report[name] for name in CATEGORY_NAMES if report[name]
     }
     return report
